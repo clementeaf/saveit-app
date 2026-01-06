@@ -16,22 +16,21 @@ import {
   differenceInHours,
   differenceInMinutes,
 } from 'date-fns';
-import { zonedTimeToUtc, utcToZonedTime, format as formatTz } from 'date-fns-tz';
+import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 export class DateUtils {
   /**
    * Get current date in timezone
    */
   static now(timezone: string): Date {
-    return utcToZonedTime(new Date(), timezone);
+    return toZonedTime(new Date(), timezone);
   }
 
   /**
    * Format date in specific timezone
    */
   static formatInTimezone(date: Date, timezone: string, formatStr: string): string {
-    const zonedDate = utcToZonedTime(date, timezone);
-    return formatTz(zonedDate, formatStr, { timeZone: timezone });
+    return formatInTimeZone(date, timezone, formatStr);
   }
 
   /**
@@ -39,7 +38,7 @@ export class DateUtils {
    */
   static parseInTimezone(dateStr: string, timezone: string, formatStr: string): Date {
     const parsedDate = parse(dateStr, formatStr, new Date());
-    return zonedTimeToUtc(parsedDate, timezone);
+    return fromZonedTime(parsedDate, timezone);
   }
 
   /**
@@ -47,9 +46,9 @@ export class DateUtils {
    */
   static isToday(date: Date, timezone: string): boolean {
     const now = this.now(timezone);
-    const dateInTz = utcToZonedTime(date, timezone);
-    return this.formatInTimezone(dateInTz, timezone, 'yyyy-MM-dd') === 
-           this.formatInTimezone(now, timezone, 'yyyy-MM-dd');
+    const dateInTz = toZonedTime(date, timezone);
+    return this.formatInTimezone(dateInTz, timezone, 'yyyy-MM-dd') ===
+      this.formatInTimezone(now, timezone, 'yyyy-MM-dd');
   }
 
   /**
@@ -182,3 +181,4 @@ export class DateUtils {
     return slots;
   }
 }
+

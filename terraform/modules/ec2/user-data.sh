@@ -27,24 +27,9 @@ apt-get install -y \
     apt-transport-https \
     software-properties-common
 
-# Install PostgreSQL
-echo "Installing PostgreSQL..."
-apt-get install -y postgresql postgresql-contrib
-
-# Configure PostgreSQL
-echo "Configuring PostgreSQL..."
-sudo -u postgres psql -c "CREATE DATABASE saveit_db;"
-sudo -u postgres psql -c "CREATE USER saveit_admin WITH PASSWORD 'saveit_dev_2026';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE saveit_db TO saveit_admin;"
-sudo -u postgres psql -c "ALTER DATABASE saveit_db OWNER TO saveit_admin;"
-
-# Allow local connections
-PG_VERSION=$(ls /etc/postgresql/)
-echo "host    all             all             127.0.0.1/32            md5" | sudo tee -a /etc/postgresql/$PG_VERSION/main/pg_hba.conf
-echo "host    all             all             ::1/128                 md5" | sudo tee -a /etc/postgresql/$PG_VERSION/main/pg_hba.conf
-
-sudo systemctl restart postgresql
-echo "PostgreSQL configured successfully!"
+# Note: PostgreSQL is managed by AWS RDS, not installed locally
+# Database credentials will be fetched from AWS Secrets Manager
+echo "PostgreSQL will be accessed via AWS RDS (managed service)"
 
 # Install Docker
 echo "Installing Docker..."
@@ -84,23 +69,8 @@ echo "Creating application directory..."
 mkdir -p /opt/saveit-app
 chown ubuntu:ubuntu /opt/saveit-app
 
-# Create environment file template
-echo "Creating environment file template..."
-cat > /opt/saveit-app/.env.template << 'EOF'
-NODE_ENV=${environment}
-PORT=3001
-
-# Database (to be populated from Secrets Manager)
-DATABASE_URL=
-
-# Redis
-REDIS_URL=${redis_endpoint}
-
-# Application
-LOG_LEVEL=info
-EOF
-
-chown ubuntu:ubuntu /opt/saveit-app/.env.template
+# Environment file will be created by fetch-secrets.sh script
+# No template needed as all values come from Secrets Manager or variables
 
 # Create systemd service for the app
 echo "Creating systemd service..."
@@ -130,26 +100,63 @@ echo "Creating helper scripts..."
 # Script to fetch secrets from AWS Secrets Manager
 cat > /usr/local/bin/fetch-secrets.sh << 'EOFSCRIPT'
 #!/bin/bash
+set -e
+
 # Fetch database credentials from Secrets Manager
-if [ -n "${db_secret_arn}" ]; then
-    echo "Fetching database credentials..."
-    SECRET_JSON=$(aws secretsmanager get-secret-value \
-        --secret-id "${db_secret_arn}" \
-        --region $(curl -s http://169.254.169.254/latest/meta-data/placement/region) \
-        --query SecretString \
-        --output text)
+# Construct secret name from project and environment
+SECRET_NAME="${project_name}-${environment}-db-credentials"
+
+echo "Fetching database credentials from Secrets Manager..."
+echo "Secret name: $SECRET_NAME"
+
+AWS_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
+
+# Try to fetch secret by name (more reliable than ARN)
+SECRET_JSON=$(aws secretsmanager get-secret-value \
+    --secret-id "$SECRET_NAME" \
+    --region "$AWS_REGION" \
+    --query SecretString \
+    --output text 2>&1) || {
+    echo "WARNING: Could not fetch secret '$SECRET_NAME'. Error: $SECRET_JSON"
+    echo "This is normal if RDS hasn't been created yet. Run this script again after RDS is ready."
+    exit 0
+}
     
-    DB_HOST=$(echo $SECRET_JSON | jq -r '.host')
-    DB_PORT=$(echo $SECRET_JSON | jq -r '.port')
-    DB_NAME=$(echo $SECRET_JSON | jq -r '.dbname')
-    DB_USER=$(echo $SECRET_JSON | jq -r '.username')
-    DB_PASS=$(echo $SECRET_JSON | jq -r '.password')
+    if [ -z "$SECRET_JSON" ] || [ "$SECRET_JSON" = "None" ]; then
+        echo "ERROR: Failed to fetch secret from Secrets Manager"
+        exit 1
+    fi
     
-    # Update .env file
-    echo "DATABASE_URL=postgresql://$DB_USER:$DB_PASS@$DB_HOST:$DB_PORT/$DB_NAME" > /opt/saveit-app/.env
-    cat /opt/saveit-app/.env.template >> /opt/saveit-app/.env
+    DB_HOST=$(echo "$SECRET_JSON" | jq -r '.host')
+    DB_PORT=$(echo "$SECRET_JSON" | jq -r '.port')
+    DB_NAME=$(echo "$SECRET_JSON" | jq -r '.dbname')
+    DB_USER=$(echo "$SECRET_JSON" | jq -r '.username')
+    DB_PASS=$(echo "$SECRET_JSON" | jq -r '.password')
     
-    echo "Database credentials fetched successfully"
+    # Validate all values are present
+    if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ] || [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
+        echo "ERROR: Missing database credentials in secret"
+        exit 1
+    fi
+    
+    # Create .env file with database URL
+    {
+        echo "NODE_ENV=${environment}"
+        echo "PORT=3001"
+        echo "DATABASE_URL=postgresql://$DB_USER:$DB_PASS@$DB_HOST:$DB_PORT/$DB_NAME"
+        echo "REDIS_URL=${redis_endpoint}"
+        echo "LOG_LEVEL=info"
+    } > /opt/saveit-app/.env
+    
+    chmod 600 /opt/saveit-app/.env
+    chown ubuntu:ubuntu /opt/saveit-app/.env
+    
+    echo "Database credentials fetched and configured successfully"
+    echo "Database host: $DB_HOST:$DB_PORT"
+    echo "Database name: $DB_NAME"
+else
+    echo "ERROR: Failed to parse secret JSON"
+    exit 1
 fi
 EOFSCRIPT
 
@@ -258,7 +265,7 @@ echo "4. View logs: journalctl -u saveit-app -f"
 
 # Optional: Auto-deploy if repository URL is provided
 # Uncomment to enable automatic deployment on boot
-# if [ -n "${app_repository_url}" ]; then
-#     echo "Auto-deploying application..."
-#     sudo -u ubuntu /usr/local/bin/deploy-app.sh
-# fi
+if [ -n "${app_repository_url}" ]; then
+    echo "Auto-deploying application..."
+    sudo -u ubuntu /usr/local/bin/deploy-app.sh
+fi

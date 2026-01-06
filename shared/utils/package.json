@@ -12,7 +12,7 @@
   "dependencies": {
     "@saveit/types": "*",
     "date-fns": "^3.0.6",
-    "date-fns-tz": "^2.0.0",
+    "date-fns-tz": "^3.0.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {

@@ -9,37 +9,38 @@ output "subnet_ids" {
   value       = data.aws_subnets.default.ids
 }
 
-# RDS Outputs
-output "rds_endpoint" {
-  description = "RDS instance endpoint"
-  value       = module.rds.db_instance_endpoint
-}
+# # RDS Outputs
+# output "rds_endpoint" {
+#   description = "RDS instance endpoint"
+#   value       = module.rds.db_instance_endpoint
+# }
+# 
+# output "rds_address" {
+#   description = "RDS instance address"
+#   value       = module.rds.db_instance_address
+# }
+# 
+# output "rds_port" {
+#   description = "RDS instance port"
+#   value       = module.rds.db_instance_port
+# }
+# 
+# output "rds_database_name" {
+#   description = "Database name"
+#   value       = module.rds.db_name
+# }
+# 
+# output "rds_secret_arn" {
+#   description = "ARN of database credentials secret"
+#   value       = module.rds.secret_arn
+# }
+# 
+# output "rds_connection_string" {
+#   description = "PostgreSQL connection string"
+#   value       = module.rds.connection_string
+#   sensitive   = true
+# }
 
-output "rds_address" {
-  description = "RDS instance address"
-  value       = module.rds.db_instance_address
-}
-
-output "rds_port" {
-  description = "RDS instance port"
-  value       = module.rds.db_instance_port
-}
-
-output "rds_database_name" {
-  description = "Database name"
-  value       = module.rds.db_name
-}
-
-output "rds_secret_arn" {
-  description = "ARN of database credentials secret"
-  value       = module.rds.secret_arn
-}
-
-output "rds_connection_string" {
-  description = "PostgreSQL connection string"
-  value       = module.rds.connection_string
-  sensitive   = true
-}
 
 # EC2 Outputs
 output "ec2_instance_id" {

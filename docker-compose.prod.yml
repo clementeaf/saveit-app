@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  app:
+    image: saveit-app:latest
+    container_name: saveit-app
+    restart: always
+    ports:
+      - "3001:3001"
+      - "3002:3002"
+      - "3003:3003"
+      - "3004:3004"
+      - "3005:3005"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=saveit_db
+      - DB_USER=saveit
+      - DB_PASSWORD=saveit123
+      - REDIS_URL=redis://redis:6379
+      # Add other necessary env vars here or use env_file
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - saveit-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: saveit-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: saveit
+      POSTGRES_PASSWORD: saveit123
+      POSTGRES_DB: saveit_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saveit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saveit-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: saveit-redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - saveit-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  saveit-network:
+    driver: bridge

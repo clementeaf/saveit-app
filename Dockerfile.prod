@@ -1,0 +1,38 @@
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS builder
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Copy all source files
+COPY . .
+
+# Install dependencies
+RUN npm install
+# Build all packages
+# Use turbo to build
+RUN npx turbo run build
+
+
+
+# Remove devDependencies to save space? 
+# For simplicity in this mono-container setup, we keep everything to ensure runtime deps are present.
+# Ideally we would prune, but we have multiple services to run.
+
+# Runner stage
+FROM base AS runner
+WORKDIR /app
+
+# Install PM2 globally
+RUN npm install -g pm2
+
+# Copy the entire app from builder (including node_modules and built artifacts)
+COPY --from=builder /app .
+
+# Expose ports
+EXPOSE 3001 3002 3003 3004 3005
+
+# Use PM2 to run the ecosystem file
+CMD ["pm2-runtime", "ecosystem.config.js"]

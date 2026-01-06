@@ -126,7 +126,9 @@ resource "aws_iam_role_policy" "secrets_access" {
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret"
         ]
-        Resource = var.secrets_arns
+        Resource = length(var.secrets_arns) > 0 ? var.secrets_arns : [
+          "arn:aws:secretsmanager:*:*:secret:${var.project_name}-${var.environment}-*"
+        ]
       }
     ]
   })

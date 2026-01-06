@@ -47,36 +47,8 @@ data "aws_subnets" "default" {
   }
 }
 
-# RDS PostgreSQL Module (Free Tier: db.t2.micro)
-module "rds" {
-  source = "./modules/rds"
-
-  project_name       = var.project_name
-  environment        = var.environment
-  vpc_id             = data.aws_vpc.default.id
-  subnet_ids         = data.aws_subnets.default.ids
-  
-  # Free Tier configuration
-  instance_class      = var.db_instance_class
-  allocated_storage   = var.db_allocated_storage
-  engine_version      = var.db_engine_version
-  
-  # Security
-  allowed_security_groups = [module.ec2.security_group_id]
-  
-  # Single-AZ for free tier
-  multi_az = false
-  
-  # Development settings
-  deletion_protection = var.environment == "prod" ? true : false
-  skip_final_snapshot = var.environment != "prod"
-  
-  # Monitoring
-  monitoring_interval = 0 # Enhanced monitoring costs extra
-  create_alarms       = var.enable_monitoring
-}
-
 # EC2 Application Server Module (Free Tier: t2.micro)
+# Create EC2 first to get security group ID for RDS
 module "ec2" {
   source = "./modules/ec2"
 
@@ -100,12 +72,15 @@ module "ec2" {
   existing_key_name   = var.existing_ssh_key_name
   
   # Application configuration
-  db_secret_arn       = module.rds.secret_arn
+  # Note: db_secret_arn will be empty initially, but user-data.sh will fetch it
+  # from Secrets Manager using the secret name pattern
+  db_secret_arn       = "" # User-data script will construct ARN from secret name
   redis_endpoint      = var.redis_endpoint_url
   app_repository_url  = var.app_repository_url
   
-  # Secrets access
-  secrets_arns = [module.rds.secret_arn]
+  # Secrets access - Grant access to RDS secret (using pattern matching)
+  # The IAM policy will allow access to secrets matching the pattern
+  secrets_arns = ["arn:aws:secretsmanager:*:*:secret:${var.project_name}-${var.environment}-db-credentials*"]
   
   # Monitoring
   enable_detailed_monitoring = false # Costs extra
@@ -114,4 +89,36 @@ module "ec2" {
   
   # Static IP (optional)
   create_eip = var.create_elastic_ip
+}
+
+# RDS PostgreSQL Module (Free Tier: db.t2.micro)
+# Created after EC2 to use EC2 security group
+module "rds" {
+  source = "./modules/rds"
+
+  project_name       = var.project_name
+  environment        = var.environment
+  vpc_id             = data.aws_vpc.default.id
+  subnet_ids         = data.aws_subnets.default.ids
+  
+  # Free Tier configuration
+  instance_class      = var.db_instance_class
+  allocated_storage   = var.db_allocated_storage
+  engine_version      = var.db_engine_version
+  
+  # Security - Allow access from EC2 security group
+  allowed_security_groups = [module.ec2.security_group_id]
+  
+  # Single-AZ for free tier
+  multi_az = false
+  
+  # Development settings
+  deletion_protection = var.environment == "prod" ? true : false
+  skip_final_snapshot = var.environment != "prod"
+  
+  # Monitoring
+  monitoring_interval = 0 # Enhanced monitoring costs extra
+  create_alarms       = var.enable_monitoring
+
+  depends_on = [module.ec2]
 }
