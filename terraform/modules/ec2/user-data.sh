@@ -27,6 +27,25 @@ apt-get install -y \
     apt-transport-https \
     software-properties-common
 
+# Install PostgreSQL
+echo "Installing PostgreSQL..."
+apt-get install -y postgresql postgresql-contrib
+
+# Configure PostgreSQL
+echo "Configuring PostgreSQL..."
+sudo -u postgres psql -c "CREATE DATABASE saveit_db;"
+sudo -u postgres psql -c "CREATE USER saveit_admin WITH PASSWORD 'saveit_dev_2026';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE saveit_db TO saveit_admin;"
+sudo -u postgres psql -c "ALTER DATABASE saveit_db OWNER TO saveit_admin;"
+
+# Allow local connections
+PG_VERSION=$(ls /etc/postgresql/)
+echo "host    all             all             127.0.0.1/32            md5" | sudo tee -a /etc/postgresql/$PG_VERSION/main/pg_hba.conf
+echo "host    all             all             ::1/128                 md5" | sudo tee -a /etc/postgresql/$PG_VERSION/main/pg_hba.conf
+
+sudo systemctl restart postgresql
+echo "PostgreSQL configured successfully!"
+
 # Install Docker
 echo "Installing Docker..."
 curl -fsSL https://get.docker.com | sh
