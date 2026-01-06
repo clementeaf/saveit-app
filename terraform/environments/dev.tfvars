@@ -6,14 +6,14 @@ environment  = "dev"
 project_name = "saveit"
 
 # RDS PostgreSQL Configuration (Free Tier)
-# 750 hours/month db.t2.micro + 20GB storage free for 12 months
-db_instance_class     = "db.t2.micro"
+# 750 hours/month db.t3.micro + 20GB storage free for 12 months
+db_instance_class     = "db.t3.micro"
 db_allocated_storage  = 20
-db_engine_version     = "15.5"
+db_engine_version     = "15"
 
 # EC2 Configuration (Free Tier)
-# 750 hours/month t2.micro + 30GB storage free for 12 months
-ec2_instance_type    = "t2.micro"
+# 750 hours/month t3.micro free for 12 months
+ec2_instance_type    = "t3.micro"
 ec2_root_volume_size = 20
 
 # SSH Access

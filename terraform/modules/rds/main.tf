@@ -115,8 +115,8 @@ resource "aws_db_instance" "main" {
   skip_final_snapshot       = var.skip_final_snapshot
   final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.project_name}-${var.environment}-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
 
-  # Parameter and option groups
-  parameter_group_name = aws_db_parameter_group.main.name
+  # Parameter and option groups - use default
+  # parameter_group_name = aws_db_parameter_group.main.name
 
   # Auto minor version upgrade
   auto_minor_version_upgrade = true
@@ -131,52 +131,19 @@ resource "aws_db_instance" "main" {
   }
 }
 
-# DB Parameter Group for PostgreSQL optimization
-resource "aws_db_parameter_group" "main" {
-  name   = "${var.project_name}-${var.environment}-pg-params"
-  family = "postgres15"
-
-  # Optimize for small instance
-  parameter {
-    name  = "shared_buffers"
-    value = "{DBInstanceClassMemory/32768}" # 25% of RAM for t2.micro
-  }
-
-  parameter {
-    name  = "max_connections"
-    value = "100"
-  }
-
-  parameter {
-    name  = "work_mem"
-    value = "4096" # 4MB
-  }
-
-  parameter {
-    name  = "maintenance_work_mem"
-    value = "65536" # 64MB
-  }
-
-  parameter {
-    name  = "effective_cache_size"
-    value = "{DBInstanceClassMemory/16384}" # 50% of RAM
-  }
-
-  parameter {
-    name  = "random_page_cost"
-    value = "1.1" # Optimized for SSD
-  }
-
-  parameter {
-    name  = "log_min_duration_statement"
-    value = "1000" # Log queries taking more than 1 second
-  }
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-pg-params"
-    Environment = var.environment
-  }
-}
+# DB Parameter Group for PostgreSQL optimization - commented out due to Free Tier restrictions
+# resource "aws_db_parameter_group" "main" {
+#   name   = "${var.project_name}-${var.environment}-pg-params"
+#   family = "postgres15"
+#   parameter {
+#     name  = "max_connections"
+#     value = "100"
+#   }
+#   tags = {
+#     Name        = "${var.project_name}-${var.environment}-pg-params"
+#     Environment = var.environment
+#   }
+# }
 
 # IAM Role for Enhanced Monitoring (optional)
 resource "aws_iam_role" "rds_monitoring" {

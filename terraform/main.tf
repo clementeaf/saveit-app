@@ -30,7 +30,6 @@ provider "aws" {
       Environment = var.environment
       Project     = "SaveIt"
       ManagedBy   = "Terraform"
-      CreatedAt   = timestamp()
     }
   }
 }

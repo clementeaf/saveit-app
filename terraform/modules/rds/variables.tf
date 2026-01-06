@@ -73,9 +73,9 @@ variable "multi_az" {
 }
 
 variable "backup_retention_period" {
-  description = "Number of days to retain backups (7 days recommended)"
+  description = "Number of days to retain backups (1 day for free tier)"
   type        = number
-  default     = 7
+  default     = 1
 }
 
 variable "backup_window" {
