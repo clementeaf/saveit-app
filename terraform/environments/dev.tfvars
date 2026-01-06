@@ -33,8 +33,21 @@ create_elastic_ip = false
 
 # Redis Configuration
 # Use external Redis (Upstash free tier) to avoid ElastiCache costs
-# Sign up at: https://upstash.com
-redis_endpoint_url = "" # Example: "https://your-redis.upstash.io"
+# 
+# PASOS PARA CONFIGURAR UPSTASH (GRATIS):
+# 1. Crear cuenta en https://upstash.com (gratis)
+# 2. Crear nueva Redis database
+# 3. Seleccionar región cercana a us-east-1
+# 4. Copiar el endpoint Redis (formato: redis://default:PASSWORD@ENDPOINT.upstash.io:6379)
+# 5. Pegar aquí abajo
+#
+# Free Tier incluye:
+# - 10,000 comandos/día
+# - 256 MB memoria
+# - SSL/TLS incluido
+# - Sin límite de tiempo
+#
+redis_endpoint_url = "" # Ejemplo: "redis://default:AbCd1234@redis-12345.upstash.io:6379"
 
 # Application Repository
 # Git repository URL for automatic deployment

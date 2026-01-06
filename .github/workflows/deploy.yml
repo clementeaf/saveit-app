@@ -34,7 +34,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Build all services
         run: npm run build
@@ -73,22 +73,49 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Deploy to ECS (placeholder)
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: terraform
         run: |
-          echo "Deploying reservation service to ECS..."
-          echo "TODO: Implement ECS deployment"
-          # aws ecs update-service --cluster saveit-dev --service reservation-service --force-new-deployment
+          terraform plan \
+            -var-file="environments/dev.tfvars" \
+            -out=tfplan \
+            -input=false
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve tfplan
+        if: github.ref == 'refs/heads/main'
+
+      - name: Get EC2 Public IP
+        id: ec2-ip
+        working-directory: terraform
+        run: |
+          EC2_IP=$(terraform output -raw ec2_public_ip)
+          echo "ip=$EC2_IP" >> $GITHUB_OUTPUT
+          echo "EC2 Public IP: $EC2_IP"
 
       - name: Run database migrations
         run: |
           echo "Running database migrations..."
-          echo "TODO: Implement migration deployment"
-          # npm run db:migrate
+          EC2_IP="${{ steps.ec2-ip.outputs.ip }}"
+          # SSH to EC2 and run migrations
+          # ssh -o StrictHostKeyChecking=no ubuntu@$EC2_IP "cd /opt/saveit-app && npm run db:migrate"
 
       - name: Verify deployment
         run: |
           echo "Verifying deployment health..."
-          # curl -f https://dev-api.saveit-app.com/health || exit 1
+          EC2_IP="${{ steps.ec2-ip.outputs.ip }}"
+          # curl -f http://$EC2_IP/health || exit 1
+          echo "Health check URL: http://$EC2_IP/health"
 
   # Deploy to staging
   deploy-staging:

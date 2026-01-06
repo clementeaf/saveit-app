@@ -139,11 +139,16 @@ SECRET_JSON=$(aws secretsmanager get-secret-value \
         exit 1
     fi
     
-    # Create .env file with database URL
+    # Create .env file with individual database variables (as expected by config.ts)
     {
         echo "NODE_ENV=${environment}"
         echo "PORT=3001"
-        echo "DATABASE_URL=postgresql://$DB_USER:$DB_PASS@$DB_HOST:$DB_PORT/$DB_NAME"
+        echo "DB_HOST=$DB_HOST"
+        echo "DB_PORT=$DB_PORT"
+        echo "DB_NAME=$DB_NAME"
+        echo "DB_USER=$DB_USER"
+        echo "DB_PASSWORD=$DB_PASS"
+        echo "DB_SSL=true"
         echo "REDIS_URL=${redis_endpoint}"
         echo "LOG_LEVEL=info"
     } > /opt/saveit-app/.env

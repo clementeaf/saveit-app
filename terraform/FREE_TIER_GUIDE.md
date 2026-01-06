@@ -221,8 +221,15 @@ Visit: https://upstash.com
 
 ```hcl
 # In environments/dev.tfvars
-redis_endpoint_url = "https://your-endpoint.upstash.io"
+# Formato: redis://default:PASSWORD@ENDPOINT.upstash.io:6379
+redis_endpoint_url = "redis://default:TU_PASSWORD@redis-12345.upstash.io:6379"
 ```
+
+**Nota:** Upstash proporciona dos tipos de endpoints:
+- **REST API** (https://) - Para HTTP requests
+- **Redis Endpoint** (redis://) - Para conexiones Redis nativas
+
+**Usa el Redis Endpoint** (redis://) para la aplicación Node.js.
 
 ### 4. Configure Application
 

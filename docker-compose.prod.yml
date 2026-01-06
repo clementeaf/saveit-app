@@ -11,18 +11,25 @@ services:
       - "3003:3003"
       - "3004:3004"
       - "3005:3005"
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=saveit_db
-      - DB_USER=saveit
-      - DB_PASSWORD=saveit123
-      - REDIS_URL=redis://redis:6379
-      # Add other necessary env vars here or use env_file
+      # Database credentials from .env.production or AWS Secrets Manager
+      # DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD should be set
+      # Redis URL from .env.production or AWS environment
+      # REDIS_URL should be set
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - saveit-network
 
@@ -30,14 +37,16 @@ services:
     image: postgres:15-alpine
     container_name: saveit-postgres
     restart: always
+    env_file:
+      - .env.production
     environment:
-      POSTGRES_USER: saveit
-      POSTGRES_PASSWORD: saveit123
-      POSTGRES_DB: saveit_db
+      POSTGRES_USER: ${DB_USER:-saveit}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: ${DB_NAME:-saveit_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U saveit"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-saveit}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -51,6 +60,11 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     networks:
       - saveit-network
 
