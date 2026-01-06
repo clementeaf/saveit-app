@@ -1,0 +1,20 @@
+{
+  "name": "@saveit/cache",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:unit": "jest --testPathPattern=unit"
+  },
+  "dependencies": {
+    "@saveit/types": "*",
+    "redis": "^4.6.11"
+  },
+  "devDependencies": {
+    "@types/redis": "^4.0.11",
+    "typescript": "^5.3.3"
+  }
+}
