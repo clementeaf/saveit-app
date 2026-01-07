@@ -91,9 +91,54 @@ export class ReservationService {
     try {
       // 6. Create reservation within SERIALIZABLE transaction with CRITICAL validations
       const reservation = await db.serializableTransaction(async (client) => {
+        // If no userId provided, create or find a guest user
+        let userId = request.userId;
+        if (!userId) {
+          // Try to find existing user by email or phone first
+          if (request.guestEmail) {
+            const existingByEmail = await client.query<{ id: string }>(
+              'SELECT id FROM users WHERE email = $1',
+              [request.guestEmail]
+            );
+            if (existingByEmail.rows.length > 0) {
+              userId = existingByEmail.rows[0]!.id;
+            }
+          }
+          
+          if (!userId && request.guestPhone) {
+            const existingByPhone = await client.query<{ id: string }>(
+              'SELECT id FROM users WHERE phone = $1',
+              [request.guestPhone]
+            );
+            if (existingByPhone.rows.length > 0) {
+              userId = existingByPhone.rows[0]!.id;
+            }
+          }
+          
+          // If user doesn't exist, create a new one
+          if (!userId) {
+            // Generate unique email/phone if not provided to avoid constraint violations
+            const email = request.guestEmail || `guest_${Date.now()}@saveit.app`;
+            const phone = request.guestPhone || `+guest_${Date.now()}`;
+            
+            const guestUserResult = await client.query<{ id: string }>(
+              `INSERT INTO users (full_name, email, phone)
+               VALUES ($1, $2, $3)
+               RETURNING id`,
+              [request.guestName, email, phone]
+            );
+            
+            if (guestUserResult.rows.length === 0) {
+              throw new ValidationError('Failed to create user');
+            }
+            
+            userId = guestUserResult.rows[0]!.id;
+          }
+        }
+
         // CRITICAL VALIDATION 1: Check user conflicts with FOR UPDATE
         const hasUserConflict = await this.reservationRepo.checkUserConflict(
-          request.userId,
+          userId,
           request.restaurantId,
           request.date,
           request.timeSlot,
@@ -103,7 +148,7 @@ export class ReservationService {
 
         if (hasUserConflict) {
           throw new ValidationError('User already has a reservation within ±2 hours of this time slot', {
-            userId: request.userId,
+            userId,
             date: request.date,
             timeSlot: request.timeSlot,
           });
@@ -134,8 +179,12 @@ export class ReservationService {
           });
         }
 
-        // All validations passed - create the reservation
-        return await this.reservationRepo.create(request, selectedTable.id, client);
+        // All validations passed - create the reservation with userId
+        return await this.reservationRepo.create(
+          { ...request, userId },
+          selectedTable.id,
+          client
+        );
       });
 
       logger.info('Reservation created successfully', {

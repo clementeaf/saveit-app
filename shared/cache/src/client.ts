@@ -102,6 +102,10 @@ export class RedisClient {
    * Get a value by key
    */
   public async get<T = string>(key: string): Promise<T | null> {
+    if (!this.client) {
+      console.warn('Redis: Client not initialized, returning null for key:', key);
+      return null;
+    }
     const value = await this.client.get(key);
     if (!value) return null;
 
@@ -116,6 +120,10 @@ export class RedisClient {
    * Set a value with optional TTL (in seconds)
    */
   public async set(key: string, value: unknown, ttl?: number): Promise<void> {
+    if (!this.client) {
+      console.warn('Redis: Client not initialized, skipping set for key:', key);
+      return;
+    }
     const serialized = typeof value === 'string' ? value : JSON.stringify(value);
 
     if (ttl) {
@@ -136,6 +144,10 @@ export class RedisClient {
    * Delete multiple keys matching a pattern
    */
   public async delPattern(pattern: string): Promise<number> {
+    if (!this.client) {
+      console.warn('Redis: Client not initialized, skipping delPattern for:', pattern);
+      return 0;
+    }
     const keys = await this.client.keys(pattern);
     if (keys.length === 0) return 0;
     return await this.client.del(keys);
@@ -173,12 +185,17 @@ export class RedisClient {
   /**
    * Acquire a distributed lock using SETNX
    * Returns true if lock was acquired, false otherwise
+   * If Redis is not available, returns true (skip lock, rely on PostgreSQL)
    */
   public async acquireLock(
     lockKey: string,
     lockValue: string,
     ttl: number
   ): Promise<boolean> {
+    if (!this.client) {
+      console.warn('Redis: Client not initialized, skipping lock (relying on PostgreSQL transactions)');
+      return true; // Skip lock if Redis not available
+    }
     try {
       // SETNX with TTL (atomic operation)
       const result = await this.client.set(lockKey, lockValue, {
@@ -196,8 +213,12 @@ export class RedisClient {
   /**
    * Release a distributed lock
    * Uses Lua script to ensure atomic check-and-delete
+   * If Redis is not available, returns true (no-op)
    */
   public async releaseLock(lockKey: string, lockValue: string): Promise<boolean> {
+    if (!this.client) {
+      return true; // Skip release if Redis not available
+    }
     // Lua script to check value and delete atomically
     const script = `
       if redis.call("get", KEYS[1]) == ARGV[1] then
@@ -254,6 +275,7 @@ export class RedisClient {
 
   /**
    * Acquire lock with retry logic
+   * If Redis is not available, returns true immediately (skip lock)
    */
   public async acquireLockWithRetry(
     lockKey: string,
@@ -262,6 +284,10 @@ export class RedisClient {
     maxRetries: number = 3,
     retryDelay: number = 100
   ): Promise<boolean> {
+    if (!this.client) {
+      console.warn('Redis: Client not initialized, skipping lock with retry (relying on PostgreSQL transactions)');
+      return true; // Skip lock if Redis not available
+    }
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const acquired = await this.acquireLock(lockKey, lockValue, ttl);
 

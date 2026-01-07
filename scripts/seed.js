@@ -14,6 +14,7 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'saveit',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 });
 
 /**
@@ -64,13 +65,13 @@ async function seedDatabase() {
         'info@labellatavolademo.com',
         'America/New_York',
         '{
-          "monday": {"open": "12:00", "close": "22:00"},
-          "tuesday": {"open": "12:00", "close": "22:00"},
-          "wednesday": {"open": "12:00", "close": "22:00"},
-          "thursday": {"open": "12:00", "close": "22:00"},
-          "friday": {"open": "12:00", "close": "23:00"},
-          "saturday": {"open": "11:00", "close": "23:00"},
-          "sunday": {"open": "11:00", "close": "21:00"}
+          "monday": [{"open": "12:00", "close": "22:00"}],
+          "tuesday": [{"open": "12:00", "close": "22:00"}],
+          "wednesday": [{"open": "12:00", "close": "22:00"}],
+          "thursday": [{"open": "12:00", "close": "22:00"}],
+          "friday": [{"open": "12:00", "close": "23:00"}],
+          "saturday": [{"open": "11:00", "close": "23:00"}],
+          "sunday": [{"open": "11:00", "close": "21:00"}]
         }'::jsonb,
         90,
         2,

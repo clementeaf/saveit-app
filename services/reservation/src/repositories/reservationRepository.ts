@@ -160,15 +160,39 @@ export class ReservationRepository extends Repository<ReservationRow> {
   ): Promise<boolean> {
     // CRITICAL: This query MUST run in a transaction with FOR UPDATE
     // to guarantee no other transaction can book this table simultaneously
-    const query = `
+    // Split into two queries because PostgreSQL doesn't allow FOR UPDATE with GROUP BY
+    
+    // First: Lock the table row and get its status
+    const tableQuery = `
       SELECT 
         t.id,
         t.status,
-        t.capacity,
-        COUNT(r.id) as active_reservations
+        t.capacity
       FROM tables t
-      LEFT JOIN reservations r ON (
-        r.table_id = t.id 
+      WHERE t.id = $1
+        AND t.is_active = TRUE
+      FOR UPDATE OF t  -- PESSIMISTIC LOCK: Blocks the table row until transaction completes
+    `;
+
+    const tableResult = client
+      ? await client.query<{ id: string; status: string; capacity: number }>(tableQuery, [tableId])
+      : await this.query<{ id: string; status: string; capacity: number }>(tableQuery, [tableId]);
+
+    if (tableResult.rows.length === 0) {
+      return false; // Table doesn't exist or is not active
+    }
+
+    const table = tableResult.rows[0]!;
+    
+    if (table.status !== 'available') {
+      return false; // Table is not available
+    }
+
+    // Second: Count overlapping reservations
+    const reservationsQuery = `
+      SELECT COUNT(*) as active_reservations
+      FROM reservations r
+      WHERE r.table_id = $1
         AND r.date = $2
         AND r.status IN ('confirmed', 'checked_in', 'pending')
         AND (
@@ -176,33 +200,25 @@ export class ReservationRepository extends Repository<ReservationRow> {
           (r.time_slot, r.time_slot + (r.duration_minutes || ' minutes')::INTERVAL) OVERLAPS
           ($3::time, $3::time + ($4 || ' minutes')::INTERVAL)
         )
-      )
-      WHERE t.id = $1
-        AND t.is_active = TRUE
-      GROUP BY t.id, t.status, t.capacity
-      FOR UPDATE OF t  -- PESSIMISTIC LOCK: Blocks the table row until transaction completes
     `;
 
-    const result = client
-      ? await client.query<{ id: string; status: string; capacity: number; active_reservations: string }>(query, [
+    const reservationsResult = client
+      ? await client.query<{ active_reservations: string }>(reservationsQuery, [
           tableId,
           date,
           timeSlot,
           durationMinutes,
         ])
-      : await this.query<{ id: string; status: string; capacity: number; active_reservations: string }>(query, [
+      : await this.query<{ active_reservations: string }>(reservationsQuery, [
           tableId,
           date,
           timeSlot,
           durationMinutes,
         ]);
 
-    if (result.rows.length === 0) {
-      return false; // Table doesn't exist or is not active
-    }
-
-    const table = result.rows[0]!;
-    return table.status === 'available' && parseInt(table.active_reservations, 10) === 0;
+    const activeReservations = parseInt(reservationsResult.rows[0]?.active_reservations || '0', 10);
+    
+    return activeReservations === 0;
   }
 
   /**
