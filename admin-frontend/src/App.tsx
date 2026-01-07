@@ -3,14 +3,33 @@
  * React + Vite + TypeScript
  */
 
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Layout } from './components/layout';
+import {
+  Dashboard,
+  Reservations,
+  Restaurants,
+  Users,
+  Settings,
+  Test,
+} from './pages';
 import './App.css';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-3xl font-bold text-gray-900">SaveIt Admin</h1>
-      <p className="mt-2 text-gray-600">Admin frontend initialized</p>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="reservations" element={<Reservations />} />
+          <Route path="restaurants" element={<Restaurants />} />
+          <Route path="users" element={<Users />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="test" element={<Test />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
