@@ -9,7 +9,7 @@ const path = require('path');
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const MIGRATIONS_DIR = path.join(__dirname, '../database/migrations');
+const MIGRATIONS_DIR = path.join(__dirname, '../backend/database/migrations');
 
 // Database configuration
 const pool = new Pool({

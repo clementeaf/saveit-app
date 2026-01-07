@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: saveit-postgres
+    environment:
+      POSTGRES_USER: saveit
+      POSTGRES_PASSWORD: saveit123
+      POSTGRES_DB: saveit_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saveit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saveit-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: saveit-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - saveit-network
+
+  # LocalStack for AWS services (S3, SES, EventBridge, etc.)
+  localstack:
+    image: localstack/localstack:latest
+    container_name: saveit-localstack
+    ports:
+      - "4566:4566"            # LocalStack Gateway
+      - "4510-4559:4510-4559"  # External services port range
+    environment:
+      - SERVICES=s3,ses,sqs,sns,events,cloudwatch,dynamodb
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - localstack_data:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - saveit-network
+
+  # pgAdmin (Optional - Database GUI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: saveit-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@saveit.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - saveit-network
+    profiles:
+      - tools
+
+  # Redis Commander (Optional - Redis GUI)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: saveit-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - saveit-network
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  localstack_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  saveit-network:
+    driver: bridge

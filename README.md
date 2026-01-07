@@ -75,21 +75,22 @@ npm run docker:down
 
 ```
 saveit-app/
-├── services/               # Microservicios
-│   ├── reservation/       # Servicio de reservas (core)
-│   ├── channel-gateway/   # Gateway multi-canal
-│   ├── notification/      # Servicio de notificaciones
-│   ├── qr-code/          # Generación de QR codes
-│   └── analytics/        # Métricas y analytics
-├── shared/               # Código compartido
-│   ├── types/           # TypeScript types
-│   ├── utils/           # Utilidades comunes
-│   ├── middleware/      # Middleware compartido
-│   ├── database/        # Cliente de base de datos
-│   └── cache/           # Cliente de Redis
-├── database/            # Database management
-│   ├── migrations/      # Migraciones SQL
-│   └── seeds/          # Datos de prueba
+├── backend/              # Código backend
+│   ├── services/         # Microservicios
+│   │   ├── reservation/  # Servicio de reservas (core)
+│   │   ├── channel-gateway/ # Gateway multi-canal
+│   │   ├── notification/ # Servicio de notificaciones
+│   │   ├── qr-code/     # Generación de QR codes
+│   │   └── analytics/   # Métricas y analytics
+│   ├── shared/           # Código compartido
+│   │   ├── types/       # TypeScript types
+│   │   ├── utils/       # Utilidades comunes
+│   │   ├── middleware/  # Middleware compartido
+│   │   ├── database/    # Cliente de base de datos
+│   │   └── cache/       # Cliente de Redis
+│   └── database/         # Database management
+│       ├── migrations/  # Migraciones SQL
+│       └── seeds/       # Datos de prueba
 ├── terraform/          # Infrastructure as Code
 │   ├── modules/       # Módulos reutilizables
 │   └── environments/  # Configuración por ambiente
@@ -141,7 +142,7 @@ El schema incluye:
 - Funciones para disponibilidad de mesas
 - Row Level Security habilitado
 
-Ver `docs/DATABASE_SCHEMA.md` y `database/migrations/001_initial_schema.sql`.
+Ver `docs/DATABASE_SCHEMA.md` y `backend/database/migrations/001_initial_schema.sql`.
 
 ## 🧪 Testing
 
