@@ -27,9 +27,13 @@ apt-get install -y \
     apt-transport-https \
     software-properties-common
 
-# Note: PostgreSQL is managed by AWS RDS, not installed locally
-# Database credentials will be fetched from AWS Secrets Manager
-echo "PostgreSQL will be accessed via AWS RDS (managed service)"
+# Database configuration
+if [ "${use_external_database}" = "true" ]; then
+    echo "Using external PostgreSQL database (Supabase/Neon/etc.)"
+else
+    echo "PostgreSQL will be accessed via AWS RDS (managed service)"
+    echo "Database credentials will be fetched from AWS Secrets Manager"
+fi
 
 # Install Docker
 echo "Installing Docker..."
@@ -97,30 +101,70 @@ EOF
 # Create helper scripts
 echo "Creating helper scripts..."
 
-# Script to fetch secrets from AWS Secrets Manager
+# Script to fetch secrets from AWS Secrets Manager or use external database
 cat > /usr/local/bin/fetch-secrets.sh << 'EOFSCRIPT'
 #!/bin/bash
 set -e
 
-# Fetch database credentials from Secrets Manager
-# Construct secret name from project and environment
-SECRET_NAME="${project_name}-${environment}-db-credentials"
-
-echo "Fetching database credentials from Secrets Manager..."
-echo "Secret name: $SECRET_NAME"
-
-AWS_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
-
-# Try to fetch secret by name (more reliable than ARN)
-SECRET_JSON=$(aws secretsmanager get-secret-value \
-    --secret-id "$SECRET_NAME" \
-    --region "$AWS_REGION" \
-    --query SecretString \
-    --output text 2>&1) || {
-    echo "WARNING: Could not fetch secret '$SECRET_NAME'. Error: $SECRET_JSON"
-    echo "This is normal if RDS hasn't been created yet. Run this script again after RDS is ready."
-    exit 0
-}
+# Check if using external database
+if [ "${use_external_database}" = "true" ]; then
+    echo "Using external database configuration..."
+    
+    # Check if credentials are in Secrets Manager
+    if [ -n "${external_database_secret_name}" ]; then
+        echo "Fetching external database credentials from Secrets Manager..."
+        AWS_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
+        
+        SECRET_JSON=$(aws secretsmanager get-secret-value \
+            --secret-id "${external_database_secret_name}" \
+            --region "$AWS_REGION" \
+            --query SecretString \
+            --output text 2>&1) || {
+            echo "ERROR: Could not fetch secret '${external_database_secret_name}'"
+            exit 1
+        }
+        
+        DB_HOST=$(echo "$SECRET_JSON" | jq -r '.host // .DB_HOST // empty')
+        DB_PORT=$(echo "$SECRET_JSON" | jq -r '.port // .DB_PORT // empty')
+        DB_NAME=$(echo "$SECRET_JSON" | jq -r '.dbname // .DB_NAME // .name // empty')
+        DB_USER=$(echo "$SECRET_JSON" | jq -r '.username // .DB_USER // .user // empty')
+        DB_PASS=$(echo "$SECRET_JSON" | jq -r '.password // .DB_PASSWORD // empty')
+    else
+        # Use direct variables (from Terraform)
+        DB_HOST="${external_database_host}"
+        DB_PORT="${external_database_port}"
+        DB_NAME="${external_database_name}"
+        DB_USER="${external_database_user}"
+        DB_PASS="${external_database_password}"
+    fi
+    
+    # Validate all values are present
+    if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ] || [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
+        echo "ERROR: Missing external database credentials"
+        exit 1
+    fi
+    
+    echo "External database configured: $DB_HOST:$DB_PORT/$DB_NAME"
+else
+    # Use AWS RDS (fetch from Secrets Manager)
+    echo "Using AWS RDS database..."
+    SECRET_NAME="${project_name}-${environment}-db-credentials"
+    
+    echo "Fetching database credentials from Secrets Manager..."
+    echo "Secret name: $SECRET_NAME"
+    
+    AWS_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
+    
+    # Try to fetch secret by name (more reliable than ARN)
+    SECRET_JSON=$(aws secretsmanager get-secret-value \
+        --secret-id "$SECRET_NAME" \
+        --region "$AWS_REGION" \
+        --query SecretString \
+        --output text 2>&1) || {
+        echo "WARNING: Could not fetch secret '$SECRET_NAME'. Error: $SECRET_JSON"
+        echo "This is normal if RDS hasn't been created yet. Run this script again after RDS is ready."
+        exit 0
+    }
     
     if [ -z "$SECRET_JSON" ] || [ "$SECRET_JSON" = "None" ]; then
         echo "ERROR: Failed to fetch secret from Secrets Manager"
@@ -139,30 +183,29 @@ SECRET_JSON=$(aws secretsmanager get-secret-value \
         exit 1
     fi
     
-    # Create .env file with individual database variables (as expected by config.ts)
-    {
-        echo "NODE_ENV=${environment}"
-        echo "PORT=3001"
-        echo "DB_HOST=$DB_HOST"
-        echo "DB_PORT=$DB_PORT"
-        echo "DB_NAME=$DB_NAME"
-        echo "DB_USER=$DB_USER"
-        echo "DB_PASSWORD=$DB_PASS"
-        echo "DB_SSL=true"
-        echo "REDIS_URL=${redis_endpoint}"
-        echo "LOG_LEVEL=info"
-    } > /opt/saveit-app/.env
-    
-    chmod 600 /opt/saveit-app/.env
-    chown ubuntu:ubuntu /opt/saveit-app/.env
-    
-    echo "Database credentials fetched and configured successfully"
-    echo "Database host: $DB_HOST:$DB_PORT"
-    echo "Database name: $DB_NAME"
-else
-    echo "ERROR: Failed to parse secret JSON"
-    exit 1
+    echo "RDS database configured: $DB_HOST:$DB_PORT/$DB_NAME"
 fi
+
+# Create .env file with individual database variables (as expected by config.ts)
+{
+    echo "NODE_ENV=${environment}"
+    echo "PORT=3001"
+    echo "DB_HOST=$DB_HOST"
+    echo "DB_PORT=$DB_PORT"
+    echo "DB_NAME=$DB_NAME"
+    echo "DB_USER=$DB_USER"
+    echo "DB_PASSWORD=$DB_PASS"
+    echo "DB_SSL=true"
+    echo "REDIS_URL=${redis_endpoint}"
+    echo "LOG_LEVEL=info"
+} > /opt/saveit-app/.env
+
+chmod 600 /opt/saveit-app/.env
+chown ubuntu:ubuntu /opt/saveit-app/.env
+
+echo "Database credentials configured successfully"
+echo "Database host: $DB_HOST:$DB_PORT"
+echo "Database name: $DB_NAME"
 EOFSCRIPT
 
 chmod +x /usr/local/bin/fetch-secrets.sh

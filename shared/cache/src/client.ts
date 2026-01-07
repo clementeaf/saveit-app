@@ -16,6 +16,13 @@ export class RedisClient {
 
   private constructor() {
     const config = getRedisConfig();
+    if (!config) {
+      console.warn('Redis: Configuration not available, Redis client will not be initialized');
+      // @ts-ignore - Create a mock client that won't be used
+      this.client = null;
+      this.isConnected = false;
+      return;
+    }
     this.client = createClient({
       url: config.url,
       socket: {
@@ -31,27 +38,29 @@ export class RedisClient {
     });
 
     // Event handlers
-    this.client.on('error', (err) => {
-      console.error('Redis Client Error:', err);
-    });
+    if (this.client) {
+      this.client.on('error', (err) => {
+        console.error('Redis Client Error:', err);
+      });
 
-    this.client.on('connect', () => {
-      console.log('Redis Client: Connecting...');
-    });
+      this.client.on('connect', () => {
+        console.log('Redis Client: Connecting...');
+      });
 
-    this.client.on('ready', () => {
-      console.log('Redis Client: Ready');
-      this.isConnected = true;
-    });
+      this.client.on('ready', () => {
+        console.log('Redis Client: Ready');
+        this.isConnected = true;
+      });
 
-    this.client.on('reconnecting', () => {
-      console.log('Redis Client: Reconnecting...');
-    });
+      this.client.on('reconnecting', () => {
+        console.log('Redis Client: Reconnecting...');
+      });
 
-    this.client.on('end', () => {
-      console.log('Redis Client: Connection closed');
-      this.isConnected = false;
-    });
+      this.client.on('end', () => {
+        console.log('Redis Client: Connection closed');
+        this.isConnected = false;
+      });
+    }
   }
 
   /**
@@ -68,6 +77,10 @@ export class RedisClient {
    * Connect to Redis
    */
   public async connect(): Promise<void> {
+    if (!this.client) {
+      console.warn('Redis: Client not initialized, skipping connect');
+      return;
+    }
     if (!this.isConnected) {
       await this.client.connect();
     }
@@ -77,6 +90,9 @@ export class RedisClient {
    * Disconnect from Redis
    */
   public async disconnect(): Promise<void> {
+    if (!this.client) {
+      return;
+    }
     if (this.isConnected) {
       await this.client.quit();
     }

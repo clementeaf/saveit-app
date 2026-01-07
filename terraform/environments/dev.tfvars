@@ -5,11 +5,22 @@ aws_region   = "us-east-1"
 environment  = "dev"
 project_name = "saveit"
 
-# RDS PostgreSQL Configuration (Free Tier)
-# 750 hours/month db.t3.micro + 20GB storage free for 12 months
-db_instance_class     = "db.t3.micro"
-db_allocated_storage  = 20
-db_engine_version     = "15"
+# Database Configuration
+# Option 1: Use external database (Supabase, Neon, etc.) - RECOMMENDED for Free Tier
+# See docs/SUPABASE_SETUP.md for setup instructions
+use_external_database = true
+external_database_host = "ep-jolly-cake-ahc7avmn-pooler.c-3.us-east-1.aws.neon.tech"
+external_database_port = 5432
+external_database_name = "neondb"
+external_database_user = "neondb_owner"
+external_database_password = "npg_0ZJjUrgxkl3A"
+external_database_secret_name = "" # Opcional: nombre del secret en AWS Secrets Manager
+
+# Option 2: Use AWS RDS (commented out due to Free Tier limit of 1 instance)
+# use_external_database = false
+# db_instance_class     = "db.t3.micro"
+# db_allocated_storage  = 20
+# db_engine_version     = "15"
 
 # EC2 Configuration (Free Tier)
 # 750 hours/month t3.micro free for 12 months
@@ -22,7 +33,7 @@ ssh_cidr_blocks = ["0.0.0.0/0"]
 
 # SSH Key Configuration
 # Option 1: Use existing key pair
-existing_ssh_key_name = null # Set to your existing key name
+existing_ssh_key_name = "saveit-dev-key" # Using existing key
 
 # Option 2: Create new key pair (set create_ssh_key_pair = true)
 create_ssh_key_pair = false
@@ -51,7 +62,7 @@ redis_endpoint_url = "" # Ejemplo: "redis://default:AbCd1234@redis-12345.upstash
 
 # Application Repository
 # Git repository URL for automatic deployment
-app_repository_url = "" # Example: "https://github.com/your-org/saveit-app.git"
+app_repository_url = "https://github.com/clementeaf/saveit-app.git"
 
 # Container
 container_port = 3001

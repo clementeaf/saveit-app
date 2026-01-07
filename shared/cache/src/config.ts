@@ -9,11 +9,12 @@ export interface RedisConfig {
   enableReadyCheck: boolean;
 }
 
-export function getRedisConfig(): RedisConfig {
+export function getRedisConfig(): RedisConfig | null {
   const url = process.env.REDIS_URL;
 
-  if (!url) {
-    throw new Error('REDIS_URL environment variable is required');
+  if (!url || url.trim() === '') {
+    console.warn('REDIS_URL not configured, Redis features will be disabled');
+    return null;
   }
 
   return {

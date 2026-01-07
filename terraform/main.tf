@@ -78,6 +78,15 @@ module "ec2" {
   redis_endpoint      = var.redis_endpoint_url
   app_repository_url  = var.app_repository_url
   
+  # External Database Configuration
+  use_external_database         = var.use_external_database
+  external_database_host         = var.external_database_host
+  external_database_port         = var.external_database_port
+  external_database_name         = var.external_database_name
+  external_database_user         = var.external_database_user
+  external_database_password     = var.external_database_password
+  external_database_secret_name  = var.external_database_secret_name
+  
   # Secrets access - Grant access to RDS secret (using pattern matching)
   # The IAM policy will allow access to secrets matching the pattern
   secrets_arns = ["arn:aws:secretsmanager:*:*:secret:${var.project_name}-${var.environment}-db-credentials*"]
@@ -92,9 +101,10 @@ module "ec2" {
 }
 
 # RDS PostgreSQL Module (Free Tier: db.t2.micro)
-# Created after EC2 to use EC2 security group
+# Only create if NOT using external database
 module "rds" {
   source = "./modules/rds"
+  count  = var.use_external_database ? 0 : 1
 
   project_name       = var.project_name
   environment        = var.environment

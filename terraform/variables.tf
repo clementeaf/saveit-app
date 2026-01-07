@@ -135,3 +135,50 @@ variable "app_repository_url" {
   type        = string
   default     = ""
 }
+
+# External Database Configuration (Supabase, Neon, etc.)
+variable "use_external_database" {
+  description = "Use external database instead of AWS RDS (for Free Tier limit avoidance)"
+  type        = bool
+  default     = false
+}
+
+variable "external_database_host" {
+  description = "External database host (e.g., db.xxxxx.supabase.co)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "external_database_port" {
+  description = "External database port"
+  type        = number
+  default     = 5432
+}
+
+variable "external_database_name" {
+  description = "External database name"
+  type        = string
+  default     = "postgres"
+  sensitive   = true
+}
+
+variable "external_database_user" {
+  description = "External database user"
+  type        = string
+  default     = "postgres"
+  sensitive   = true
+}
+
+variable "external_database_password" {
+  description = "External database password (or use Secrets Manager)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "external_database_secret_name" {
+  description = "AWS Secrets Manager secret name for external database credentials (optional)"
+  type        = string
+  default     = ""
+}

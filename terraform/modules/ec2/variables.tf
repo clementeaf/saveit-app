@@ -90,6 +90,53 @@ variable "app_repository_url" {
   default     = ""
 }
 
+# External Database Configuration
+variable "use_external_database" {
+  description = "Use external database instead of AWS RDS"
+  type        = bool
+  default     = false
+}
+
+variable "external_database_host" {
+  description = "External database host"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "external_database_port" {
+  description = "External database port"
+  type        = number
+  default     = 5432
+}
+
+variable "external_database_name" {
+  description = "External database name"
+  type        = string
+  default     = "postgres"
+  sensitive   = true
+}
+
+variable "external_database_user" {
+  description = "External database user"
+  type        = string
+  default     = "postgres"
+  sensitive   = true
+}
+
+variable "external_database_password" {
+  description = "External database password"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "external_database_secret_name" {
+  description = "AWS Secrets Manager secret name for external database credentials"
+  type        = string
+  default     = ""
+}
+
 variable "enable_user_data" {
   description = "Enable user data script for initial setup"
   type        = bool

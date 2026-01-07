@@ -9,35 +9,42 @@ output "subnet_ids" {
   value       = data.aws_subnets.default.ids
 }
 
-# RDS Outputs
+# RDS Outputs (only when using AWS RDS)
 output "rds_endpoint" {
   description = "RDS instance endpoint"
-  value       = module.rds.db_instance_endpoint
+  value       = var.use_external_database ? null : (length(module.rds) > 0 ? module.rds[0].db_instance_endpoint : null)
 }
 
 output "rds_address" {
   description = "RDS instance address"
-  value       = module.rds.db_instance_address
+  value       = var.use_external_database ? null : (length(module.rds) > 0 ? module.rds[0].db_instance_address : null)
 }
 
 output "rds_port" {
   description = "RDS instance port"
-  value       = module.rds.db_instance_port
+  value       = var.use_external_database ? null : (length(module.rds) > 0 ? module.rds[0].db_instance_port : null)
 }
 
 output "rds_database_name" {
   description = "Database name"
-  value       = module.rds.db_name
+  value       = var.use_external_database ? null : (length(module.rds) > 0 ? module.rds[0].db_name : null)
 }
 
 output "rds_secret_arn" {
   description = "ARN of database credentials secret"
-  value       = module.rds.secret_arn
+  value       = var.use_external_database ? null : (length(module.rds) > 0 ? module.rds[0].secret_arn : null)
 }
 
 output "rds_connection_string" {
   description = "PostgreSQL connection string"
-  value       = module.rds.connection_string
+  value       = var.use_external_database ? null : (length(module.rds) > 0 ? module.rds[0].connection_string : null)
+  sensitive   = true
+}
+
+# External Database Info (when using external database)
+output "external_database_info" {
+  description = "External database configuration (host only, for security)"
+  value       = var.use_external_database ? "Using external database: ${var.external_database_host}:${var.external_database_port}/${var.external_database_name}" : null
   sensitive   = true
 }
 

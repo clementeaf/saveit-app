@@ -48,6 +48,9 @@ Thumbs.db
 *.tfstate.*
 .terraform/
 .terraform.lock.hcl
+*.tfvars
+*.tfvars.backup
+!terraform/environments/*.tfvars.example
 
 # AWS
 .aws-sam/

@@ -160,11 +160,18 @@ resource "aws_iam_instance_profile" "ec2" {
 # User data script for initial setup
 locals {
   user_data = templatefile("${path.module}/user-data.sh", {
-    environment        = var.environment
-    project_name       = var.project_name
-    db_secret_arn      = var.db_secret_arn
-    redis_endpoint     = var.redis_endpoint
-    app_repository_url = var.app_repository_url
+    environment                  = var.environment
+    project_name                 = var.project_name
+    db_secret_arn                = var.db_secret_arn
+    redis_endpoint               = var.redis_endpoint
+    app_repository_url           = var.app_repository_url
+    use_external_database        = var.use_external_database ? "true" : "false"
+    external_database_host       = var.external_database_host
+    external_database_port       = var.external_database_port
+    external_database_name       = var.external_database_name
+    external_database_user       = var.external_database_user
+    external_database_password   = var.external_database_password
+    external_database_secret_name = var.external_database_secret_name
   })
 }
 

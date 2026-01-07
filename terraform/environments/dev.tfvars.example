@@ -1,0 +1,58 @@
+# Development Environment Configuration
+# AWS Free Tier optimized settings
+# 
+# INSTRUCCIONES:
+# 1. Copia este archivo como dev.tfvars: cp dev.tfvars.example dev.tfvars
+# 2. Completa las variables con tus credenciales
+# 3. NO subas dev.tfvars a Git (está en .gitignore)
+
+aws_region   = "us-east-1"
+environment  = "dev"
+project_name = "saveit"
+
+# Database Configuration
+# Using external database (Supabase) to avoid RDS Free Tier limit
+use_external_database = true
+external_database_host = "" # Ejemplo: "db.xxxxx.supabase.co"
+external_database_port = 5432
+external_database_name = "postgres"
+external_database_user = "postgres"
+external_database_password = "" # O dejar vacío y usar external_database_secret_name
+external_database_secret_name = "" # Opcional: nombre del secret en AWS Secrets Manager
+
+# EC2 Configuration (Free Tier)
+ec2_instance_type    = "t3.micro"
+ec2_root_volume_size = 20
+
+# SSH Access
+ssh_cidr_blocks = ["0.0.0.0/0"] # Cambiar a tu IP para mayor seguridad
+
+# SSH Key Configuration
+existing_ssh_key_name = "saveit-dev-key"
+create_ssh_key_pair = false
+ssh_public_key      = ""
+
+# Elastic IP (Optional)
+create_elastic_ip = false
+
+# Redis Configuration (Upstash)
+redis_endpoint_url = "" # Ejemplo: "redis://default:PASSWORD@redis-12345.upstash.io:6379"
+
+# Application Repository
+app_repository_url = "https://github.com/clementeaf/saveit-app.git"
+
+# Container
+container_port = 3001
+
+# Monitoring
+enable_monitoring = true
+
+# Tags
+tags = {
+  CostCenter  = "Development"
+  Owner       = "DevTeam"
+  Environment = "dev"
+  Terraform   = "true"
+  FreeTier    = "true"
+}
+
