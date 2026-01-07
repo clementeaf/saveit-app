@@ -16,7 +16,7 @@ export function MainContent({ sidebarOpen = true }: MainContentProps) {
         sidebarOpen ? 'ml-64' : 'ml-20'
       }`}
     >
-      <div className="h-full p-6 overflow-y-auto">
+      <div className="h-full overflow-hidden flex flex-col p-6">
         <Outlet />
       </div>
     </main>

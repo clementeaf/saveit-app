@@ -15,7 +15,7 @@ export function Layout() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen">
       <Sidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
       <MainContent sidebarOpen={sidebarOpen} />
     </div>

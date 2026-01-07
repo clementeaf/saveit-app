@@ -7,11 +7,9 @@ import { Chat } from '../components/chat';
 
 export function Test() {
   return (
-    <div className="h-full">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Test</h1>
-      <div className="h-[calc(100vh-12rem)] max-w-4xl mx-auto">
+    <div className="h-full w-full flex flex-col overflow-hidden">
+      <h1 className="text-3xl font-bold text-gray-900 mb-6 flex-shrink-0">Test</h1>
         <Chat />
-      </div>
     </div>
   );
 }

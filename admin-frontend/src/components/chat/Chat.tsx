@@ -53,40 +53,50 @@ const mockMessages: Message[] = [
   },
 ];
 
+/**
+ * Get status icon for message status
+ * @param status - Message status
+ * @returns Status icon string
+ */
+function getStatusIcon(status?: string): string {
+  switch (status) {
+    case 'read':
+      return '✓✓';
+    case 'delivered':
+      return '✓✓';
+    case 'sent':
+      return '✓';
+    default:
+      return '';
+  }
+}
+
+/**
+ * Get status color class for message status
+ * @param status - Message status
+ * @returns Tailwind color class
+ */
+function getStatusColor(status?: string): string {
+  switch (status) {
+    case 'read':
+      return 'text-blue-500';
+    case 'delivered':
+      return 'text-gray-400';
+    case 'sent':
+      return 'text-gray-400';
+    default:
+      return 'text-gray-400';
+  }
+}
+
 export function Chat() {
   const [messages] = useState<Message[]>(mockMessages);
   const [inputValue, setInputValue] = useState('');
 
-  const getStatusIcon = (status?: string) => {
-    switch (status) {
-      case 'read':
-        return '✓✓';
-      case 'delivered':
-        return '✓✓';
-      case 'sent':
-        return '✓';
-      default:
-        return '';
-    }
-  };
-
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'read':
-        return 'text-blue-500';
-      case 'delivered':
-        return 'text-gray-400';
-      case 'sent':
-        return 'text-gray-400';
-      default:
-        return 'text-gray-400';
-    }
-  };
-
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="flex flex-col h-[700px] rounded-lg shadow-lg overflow-hidden border border-gray-200">
       {/* Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
             JD
@@ -102,7 +112,7 @@ export function Chat() {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-4" style={{ minHeight: 0 }}>
         {messages.map((message) => (
           <div
             key={message.id}
@@ -154,7 +164,7 @@ export function Chat() {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-gray-200 bg-white">
+      <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0">
         <div className="flex items-end gap-2">
           {/* Attachment Button */}
           <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600">
