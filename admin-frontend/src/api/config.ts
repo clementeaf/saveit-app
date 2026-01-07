@@ -4,7 +4,7 @@
  */
 
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3004',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -27,5 +27,10 @@ export const API_ENDPOINTS = {
   // Users
   users: '/api/users',
   userById: (id: string) => `/api/users/${id}`,
+  
+  // Chat / Channels
+  chatHistory: (userId: string) => `/api/channels/${userId}/history`,
+  chatSend: '/api/channels/send',
+  chatIncoming: '/api/channels/incoming',
 } as const;
 

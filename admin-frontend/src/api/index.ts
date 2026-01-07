@@ -9,6 +9,7 @@ export * from './services';
 export * from './hooks';
 export * from './types/common';
 export * from './types/reservation';
+export * from './types/chat';
 export type {
   Restaurant,
   CreateRestaurantRequest,

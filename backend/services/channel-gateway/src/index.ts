@@ -2,15 +2,18 @@
  * Channel Gateway Service - Entry Point
  */
 
-import express, { Request, Response } from 'express';
-import dotenv from 'dotenv';
+import express, { type Request, type Response } from 'express';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 import { db } from '@saveit/database';
 import { errorHandler, requestLogger, corsMiddleware, asyncHandler } from '@saveit/middleware';
 import { logger } from '@saveit/utils';
 import { ChannelGateway } from './services/channelGateway';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from multiple locations
+dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../../.env') });
+dotenv.config(); // Also try default locations
 
 const app = express();
 const PORT = process.env.PORT || 3004;

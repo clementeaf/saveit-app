@@ -5,4 +5,5 @@
 
 export * from './useReservations';
 export * from './useRestaurants';
+export * from './useChat';
 

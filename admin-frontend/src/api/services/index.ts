@@ -5,4 +5,5 @@
 
 export { reservationService } from './reservationService';
 export { restaurantService } from './restaurantService';
+export { chatService } from './chatService';
 
