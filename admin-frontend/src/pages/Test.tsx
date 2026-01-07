@@ -3,12 +3,14 @@
  * Test view for development and testing
  */
 
+import { Chat } from '../components/chat';
+
 export function Test() {
   return (
-    <div>
+    <div className="h-full">
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Test</h1>
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-600">Test page for development and testing purposes</p>
+      <div className="h-[calc(100vh-12rem)] max-w-4xl mx-auto">
+        <Chat />
       </div>
     </div>
   );

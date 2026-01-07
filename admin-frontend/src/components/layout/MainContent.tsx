@@ -12,11 +12,11 @@ interface MainContentProps {
 export function MainContent({ sidebarOpen = true }: MainContentProps) {
   return (
     <main
-      className={`flex-1 transition-all duration-300 ${
+      className={`flex-1 transition-all duration-300 h-screen overflow-hidden ${
         sidebarOpen ? 'ml-64' : 'ml-20'
       }`}
     >
-      <div className="p-6">
+      <div className="h-full p-6 overflow-y-auto">
         <Outlet />
       </div>
     </main>
